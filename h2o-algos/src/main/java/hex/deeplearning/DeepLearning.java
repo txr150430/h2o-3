@@ -411,18 +411,15 @@ public class DeepLearning extends ModelBuilder<DeepLearningModel,DeepLearningMod
         _job.update(0,"Training...");
 
         //main loop
-        for(;;) {
+        while(model.iterations < 50) {
           model.iterations++;
-          model.set_model_info(mp._epochs == 0 ? model.model_info() : H2O.CLOUD.size() > 1 && mp._replicate_training_data ? (mp._single_node_mode ?
-                  new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info() : //replicated data + single node mode
-                  new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAllNodes(             ).model_info()): //replicated data + multi-node mode
-                  new DeepLearningTask (_job._key,        model.model_info(), rowFraction(train, mp, model), model.iterations).doAll     (    train    ).model_info()); //distributed data (always in multi-node mode)
-          if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
-          if (!model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false)) break; //finished training (or early stopping or convergence)
-          if (timeout()) { //stop after scoring
-            _job.update((long) (mp._epochs * train.numRows())); // mark progress as completed
-            break;
-          }
+          model.set_model_info(new DeepLearningTask2(_job._key, train, model.model_info(), rowFraction(train, mp, model), model.iterations).doAll(Key.make(H2O.SELF)).model_info()); //distributed data (always in multi-node mode)
+          //if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
+          //if (!model.doScoring(trainScoreFrame, validScoreFrame, _job._key, model.iterations, false)) break; //finished training (or early stopping or convergence)
+          //if (timeout()) { //stop after scoring
+          //  _job.update((long) (mp._epochs * train.numRows())); // mark progress as completed
+          //  break;
+          //}
         }
 
         // replace the model with the best model so far (if it's better)
