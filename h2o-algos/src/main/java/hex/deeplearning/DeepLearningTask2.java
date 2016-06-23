@@ -81,7 +81,7 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
     _sharedmodel.mlpGPU.build_mlp();
     _sharedmodel.mlpGPU.train();
 
-    //System.out.println(_sharedmodel.mlpGPU.compAccuracy());
+//    System.out.println(_sharedmodel.mlpGPU.compAccuracy());
 
     //_res = new DeepLearningTask(_jobKey, _sharedmodel, _sync_fraction, _iteration, this);
     //addToPendingCount(1);
@@ -119,10 +119,11 @@ public class DeepLearningTask2 extends MRTask<DeepLearningTask2> {
     //_res.model_info().div(_res._chunk_node_count);
     //_res.model_info().add_processed_global(_res.model_info().get_processed_local()); //switch from local counters to global counters
     //_res.model_info().set_processed_local(0l);
-    //DeepLearningModelInfo nodeAverageModel = _res.model_info();
+    //DeepLearningModelInfo nodeAverageModel = _sharedmodel;
     //if (nodeAverageModel.get_params()._elastic_averaging)
     //  _sharedmodel = DeepLearningModelInfo.timeAverage(nodeAverageModel);
     //else
     //  _sharedmodel = nodeAverageModel;
+    _sharedmodel.add_processed_local(_sharedmodel._train.numRows());
   }
 }

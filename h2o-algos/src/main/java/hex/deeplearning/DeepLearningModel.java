@@ -369,8 +369,8 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
       } else {
         if (printme) Log.info("Scoring the model.");
         // compute errors
-        final String m = model_info().toString();
-        if (m.length() > 0) Log.info(m);
+        //final String m = model_info().toString();
+        //if (m.length() > 0) Log.info(m);
         final Frame trainPredict = score(fTrain);
         trainPredict.delete();
 
@@ -383,6 +383,7 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
           ModelMetricsBinomial mm = (ModelMetricsBinomial)(mm1);
           scoringInfo.training_AUC = mm._auc;
         }
+
         if (fTrain.numRows() != training_rows) {
           _output._training_metrics._description = "Metrics reported on temporary training frame with " + fTrain.numRows() + " samples";
         } else if (fTrain._key != null && fTrain._key.toString().contains("chunks")){
@@ -533,7 +534,14 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
    */
   @Override protected Frame predictScoreImpl(Frame orig, Frame adaptedFr, String destination_key, Job j) {
     if (!get_params()._autoencoder) {
-      return super.predictScoreImpl(orig, adaptedFr, destination_key, j);
+//      System.out.println("orig: " + orig.numCols() + " " + orig.numRows());
+      float[] pred = new float[(int)orig.numRows()];
+      Vec predV = orig.vecs()[0].makeZero();
+      Frame res = new Frame(predV);
+      //DKV.put(res);
+      makeMetricBuilder(null).makeModelMetrics(this, orig, null, null);
+      return res;
+//      return super.predictScoreImpl(orig, adaptedFr, destination_key, j);
     } else {
       // Reconstruction
       final int len = model_info().data_info().fullN();

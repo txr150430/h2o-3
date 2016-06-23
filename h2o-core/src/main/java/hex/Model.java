@@ -829,11 +829,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         Log.info(getHitRatioTable(mm.hr()));
       }
       Vec actual = fr.vec(_output.responseName());
-      if( actual != null ) {  // Predict does not have an actual, scoring does
-        String sdomain[] = actual.domain(); // Scored/test domain; can be null
-        if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
-          output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key));
-      }
+      //if( actual != null ) {  // Predict does not have an actual, scoring does
+      //  String sdomain[] = actual.domain(); // Scored/test domain; can be null
+      //  if (sdomain != null && mdomain != sdomain && !Arrays.equals(mdomain, sdomain))
+      //    output.replace(0, new CategoricalWrappedVec(actual.group().addVec(), actual._rowLayout, sdomain, predicted._key));
+      //}
     }
 
     cleanup_adapt(adaptFr, fr);
