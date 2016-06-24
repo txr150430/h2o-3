@@ -16,8 +16,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   final private boolean _training;
   private DeepLearningModelInfo _localmodel; //per-node state (to be reduced)
   private DeepLearningModelInfo _sharedmodel; //input/output
-  transient Neurons[] _neurons;
-  transient Random _dropout_rng;
+//  transient Neurons[] _neurons;
+//  transient Random _dropout_rng;
   int _chunk_node_count = 1;
 
   /**
@@ -85,8 +85,8 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
   @Override protected boolean chunkInit(){
     if (_localmodel.get_processed_local() >= _useFraction * _fr.numRows())
       return false;
-    _neurons = makeNeuronsForTraining(_localmodel);
-    _dropout_rng = RandomUtils.getRNG(System.currentTimeMillis());
+//    _neurons = makeNeuronsForTraining(_localmodel);
+//    _dropout_rng = RandomUtils.getRNG(System.currentTimeMillis());
     return true;
   }
 
@@ -98,31 +98,18 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
    */
   @Override public final void processRow(long seed, DataInfo.Row r, int mb) {
     if (_localmodel.get_params()._reproducible) {
-      seed += _localmodel.get_processed_global(); //avoid periodicity
+//      seed += _localmodel.get_processed_global(); //avoid periodicity
     } else {
-      seed = _dropout_rng.nextLong(); // non-reproducible case - make a fast & good random number
+//      seed = _dropout_rng.nextLong(); // non-reproducible case - make a fast & good random number
     }
     _localmodel.checkMissingCats(r.binIds);
-    ((Neurons.Input) _neurons[0]).setInput(seed, r.isSparse() ? r.numIds : null, r.numVals, r.nBins, r.binIds, mb);
+    _localmodel.set_data_local((float) r.get(0));
+
+//    System.out.println("r.get(0): " + r.get(0) + " " + r.toString());
+
+//    ((Neurons.Input) _neurons[0]).setInput(seed, r.isSparse() ? r.numIds : null, r.numVals, r.nBins, r.binIds, mb);
   }
 
-  /**
-   * Apply the gradient to update the weights
-   * @param seed
-   * @param responses
-   * @param offsets
-   * @param n number of trained examples in this last mini batch (usually == mini_batch_size, but can be less)
-   */
-  @Override public void processMiniBatch(long seed, double[] responses, double[] offsets, int n) {
-    assert(_training);
-    if (_localmodel.get_params()._reproducible) {
-      seed += _localmodel.get_processed_global(); //avoid periodicity
-    } else {
-      seed = _dropout_rng.nextLong(); // non-reproducible case - make a fast & good random number
-    }
-    fpropMiniBatch(seed, _neurons, _localmodel, _localmodel.get_params()._elastic_averaging ? _sharedmodel : null, _training, responses, offsets, n);
-    bpropMiniBatch(_neurons, n);
-  }
 
   /**
    * Helper to apply back-propagation without clearing out the gradients afterwards
@@ -195,12 +182,15 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
 
   static long _lastWarn;
   static long _warnCount;
+
+
   /**
    * After all reduces are done, the driver node calls this method to clean up
    * This is only needed if we're not inside a DeepLearningTask2 (which will do the reduction between replicated data workers).
    * So if replication is disabled, and every node works on partial data, then we have work to do here (model averaging).
    */
   @Override protected void postGlobal(){
+
     DeepLearningParameters dlp = _localmodel.get_params();
     if (H2O.CLOUD.size() > 1 && !dlp._replicate_training_data) {
       long now = System.currentTimeMillis();
@@ -217,11 +207,15 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     if (!_run_local) {
       _localmodel.add_processed_global(_localmodel.get_processed_local()); //move local sample counts to global ones
       _localmodel.set_processed_local(0l);
+      _localmodel.set_data_global(_localmodel.get_data_local());
+      _localmodel.clear_data_local();
       // model averaging
       if (_chunk_node_count > 1)
         _localmodel.div(_chunk_node_count);
       if (_localmodel.get_params()._elastic_averaging)
         _sharedmodel = DeepLearningModelInfo.timeAverage(_localmodel);
+
+
     } else {
       //Get ready for reduction in DeepLearningTask2
       //Just swap the local and global models
@@ -230,6 +224,9 @@ public class DeepLearningTask extends FrameTask<DeepLearningTask> {
     if (_sharedmodel == null)
       _sharedmodel = _localmodel;
     _localmodel = null;
+
+    System.out.println("protected void postGlobal() " + _sharedmodel.get_data_global().size() + " " + _sharedmodel.get_processed_global());
+
   }
 
   public static Neurons[] makeNeuronsForTraining(final DeepLearningModelInfo minfo) {

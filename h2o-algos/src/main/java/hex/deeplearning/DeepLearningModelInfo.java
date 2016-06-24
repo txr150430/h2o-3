@@ -9,21 +9,16 @@ import water.*;
 import water.fvec.Frame;
 import water.util.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 
-import water.gpu.MLPNative;
 
 /**
  * This class contains the state of the Deep Learning model
  * This will be shared: one per node
  */
 final public class DeepLearningModelInfo extends Iced {
-  static {
-    System.loadLibrary("mlp");
-  }
-
-  public transient MLPNative mlpGPU;
 
   public TwoDimTable summaryTable;
 
@@ -133,6 +128,24 @@ final public class DeepLearningModelInfo extends Iced {
     unstable = true;
   }
 
+  private ArrayList<Float> data_global;
+  private ArrayList<Float> data_local;
+  public synchronized ArrayList<Float> get_data_global() { return data_global; }
+  public synchronized void set_data_global(ArrayList<Float> p) {
+    for (int i = 0; i < p.size(); i++) {
+      data_global.add(p.get(i));
+    }
+  }
+
+  public synchronized ArrayList<Float> get_data_local() { return data_local; }
+  public synchronized void set_data_local(float p) {
+    data_local.add(p);
+  }
+
+  public synchronized void clear_data_local() {
+    data_local.clear();
+  }
+
   private long processed_global;
   public synchronized long get_processed_global() { return processed_global; }
   public synchronized void set_processed_global(long p) { processed_global = p; }
@@ -168,8 +181,8 @@ final public class DeepLearningModelInfo extends Iced {
    * @param valid User-specified validation data frame, prepared by AdaptTestTrain
    */
   public DeepLearningModelInfo(final DeepLearningParameters params, Key model_id, final DataInfo dinfo, int nClasses, Frame train, Frame valid) {
-
-    mlpGPU = new MLPNative();
+    data_global = new ArrayList<Float>();
+    data_local = new ArrayList<Float>();
 
     _classification = nClasses > 1;
     _train = train;
